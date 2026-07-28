@@ -15,7 +15,7 @@ function initApp() {
     const btn = document.createElement('button');
     btn.dataset.tool = t.id;
     btn.textContent = `${t.icon} ${t.label}`;
-    btn.addEventListener('click', () => switchTool(t.id));
+    btn.addEventListener('click', () => loadTool(t.id));
     nav.appendChild(btn);
   });
 
