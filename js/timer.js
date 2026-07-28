@@ -1,42 +1,11 @@
-function renderTimer() {
-  const page = document.getElementById('page-timer');
-  page.innerHTML = `
-    <div class="tool-card">
-      <h2>⏱ 計時器</h2>
-      <div class="flex-center mb-2">
-        <select id="timerPreset">
-          <option value="60">1 分鐘</option>
-          <option value="120">2 分鐘</option>
-          <option value="180" selected>3 分鐘</option>
-          <option value="300">5 分鐘</option>
-          <option value="600">10 分鐘</option>
-          <option value="900">15 分鐘</option>
-          <option value="1800">30 分鐘</option>
-          <option value="0">自訂</option>
-        </select>
-        <input type="number" id="timerCustom" min="1" max="3600" value="5" placeholder="分鐘" style="width:100px" disabled>
-      </div>
-      <div class="timer-display" id="timerDisplay">03:00</div>
-      <div class="flex-center">
-        <button class="btn btn-primary" id="timerStart">▶ 開始</button>
-        <button class="btn btn-outline" id="timerPause">⏸ 暫停</button>
-        <button class="btn btn-danger" id="timerReset">⟳ 重置</button>
-      </div>
-    </div>
-  `;
-
+function initTimer() {
   const display = document.getElementById('timerDisplay');
   const preset = document.getElementById('timerPreset');
   const custom = document.getElementById('timerCustom');
-  let totalSeconds = 180;
-  let remaining = 180;
-  let isRunning = false;
-  let interval;
+  let totalSeconds = 180, remaining = 180, isRunning = false, interval = null;
 
   function formatTime(s) {
-    const m = Math.floor(s / 60);
-    const sec = s % 60;
-    return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+    return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
   }
 
   function updateDisplay() {
@@ -46,21 +15,12 @@ function renderTimer() {
     else if (remaining <= 30) display.classList.add('warning');
   }
 
-  function setTime(seconds) {
-    remaining = seconds;
-    totalSeconds = seconds;
-    updateDisplay();
-  }
+  function setTime(seconds) { remaining = seconds; totalSeconds = seconds; updateDisplay(); }
 
   preset.addEventListener('change', () => {
-    const val = parseInt(preset.value);
-    if (val === 0) {
-      custom.disabled = false;
-      setTime(parseInt(custom.value) * 60 || 300);
-    } else {
-      custom.disabled = true;
-      setTime(val);
-    }
+    const v = parseInt(preset.value);
+    if (v === 0) { custom.disabled = false; setTime(parseInt(custom.value) * 60 || 300); }
+    else { custom.disabled = true; setTime(v); }
   });
 
   custom.addEventListener('input', () => {
@@ -69,48 +29,38 @@ function renderTimer() {
 
   document.getElementById('timerStart').addEventListener('click', () => {
     if (isRunning) return;
-    if (remaining <= 0) { setTime(totalSeconds); }
+    if (remaining <= 0) setTime(totalSeconds);
     isRunning = true;
     interval = setInterval(() => {
       remaining--;
       updateDisplay();
       if (remaining <= 0) {
-        clearInterval(interval);
-        isRunning = false;
+        clearInterval(interval); interval = null; isRunning = false;
         display.textContent = '⏰ 時間到！';
         display.className = 'timer-display danger';
-        playAlarm();
+        try {
+          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          [440, 660, 880].forEach((f, i) => {
+            const o = ctx.createOscillator(), g = ctx.createGain();
+            o.frequency.value = f; o.type = 'square';
+            g.gain.setValueAtTime(0.3, ctx.currentTime + i * 0.25);
+            g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + i * 0.25 + 0.3);
+            o.connect(g).connect(ctx.destination); o.start(ctx.currentTime + i * 0.25);
+            o.stop(ctx.currentTime + i * 0.25 + 0.3);
+          });
+        } catch(e) {}
       }
     }, 1000);
   });
 
   document.getElementById('timerPause').addEventListener('click', () => {
-    clearInterval(interval);
-    isRunning = false;
+    clearInterval(interval); interval = null; isRunning = false;
   });
 
   document.getElementById('timerReset').addEventListener('click', () => {
-    clearInterval(interval);
-    isRunning = false;
+    clearInterval(interval); interval = null; isRunning = false;
     setTime(totalSeconds);
   });
-
-  function playAlarm() {
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      [440, 660, 880].forEach((f, i) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.frequency.value = f;
-        osc.type = 'square';
-        gain.gain.setValueAtTime(0.3, ctx.currentTime + i * 0.25);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + i * 0.25 + 0.3);
-        osc.connect(gain).connect(ctx.destination);
-        osc.start(ctx.currentTime + i * 0.25);
-        osc.stop(ctx.currentTime + i * 0.25 + 0.3);
-      });
-    } catch(e) {}
-  }
 
   updateDisplay();
 }

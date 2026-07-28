@@ -9,18 +9,7 @@ const TOOLS = [
   { id: 'random-num', icon: '🔢', label: '隨機號碼' },
 ];
 
-function initApp() {
-  const nav = document.getElementById('toolNav');
-  TOOLS.forEach(t => {
-    const btn = document.createElement('button');
-    btn.dataset.tool = t.id;
-    btn.textContent = `${t.icon} ${t.label}`;
-    btn.addEventListener('click', () => loadTool(t.id));
-    nav.appendChild(btn);
-  });
-
-  loadTool('picker');
-}
+const INITIALIZED = {};
 
 function switchTool(id) {
   document.querySelectorAll('.tool-page').forEach(el => el.classList.remove('active'));
@@ -33,25 +22,33 @@ function switchTool(id) {
   if (btn) btn.classList.add('active');
 }
 
-function loadTool(id) {
-  const factories = {
-    picker: renderPicker,
-    wheel: renderWheel,
-    sounds: renderSounds,
-    timer: renderTimer,
-    buzzer: renderBuzzer,
-    groups: renderGroups,
-    scoreboard: renderScoreboard,
-    'random-num': renderRandomNum,
+function initApp() {
+  const nav = document.getElementById('toolNav');
+  TOOLS.forEach(t => {
+    const btn = document.createElement('button');
+    btn.dataset.tool = t.id;
+    btn.textContent = `${t.icon} ${t.label}`;
+    btn.addEventListener('click', () => switchTool(t.id));
+    nav.appendChild(btn);
+  });
+
+  const inits = {
+    picker: initPicker,
+    wheel: initWheel,
+    sounds: initSounds,
+    timer: initTimer,
+    buzzer: initBuzzer,
+    groups: initGroups,
+    scoreboard: initScoreboard,
+    'random-num': initRandomNum,
   };
-  const app = document.getElementById('app');
-  app.innerHTML = '';
-  const page = document.createElement('div');
-  page.className = 'tool-page active';
-  page.id = `page-${id}`;
-  app.appendChild(page);
-  factories[id]();
-  switchTool(id);
+
+  TOOLS.forEach(t => {
+    if (inits[t.id]) {
+      inits[t.id]();
+      INITIALIZED[t.id] = true;
+    }
+  });
 }
 
 document.addEventListener('DOMContentLoaded', initApp);
